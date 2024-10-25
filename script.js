@@ -31,6 +31,9 @@ function generateHTML() {
                 <label for="numParams">Number of parameters per request:</label>
                 <input type="number" id="numParams" value="${results.length}">
                 <br>
+                <label for="canary">Canary:</label>
+                <input type="text" id="canary" value="hdpewo56">
+                <br>
                 <label for="includeHash">Include hash:</label>
                 <input type="checkbox" id="includeHash">
                 <br>
@@ -76,12 +79,13 @@ function populateTable() {
 function makeRequest() {
     const numParams = parseInt(document.getElementById('numParams').value);
     const includeHash = document.getElementById('includeHash').checked;
+    const canary = document.getElementById('canary').value
     let params = [];
     let count = 0;
 
     for (let i = currentIndex; i < results.length && count < numParams; i++) {
         if (document.getElementById(`result${i}`).checked) {
-            params.push(`${results[i]}=hdpewo56`);
+            params.push(`${results[i]}=${canary}`);
             count++;
         }
     }
