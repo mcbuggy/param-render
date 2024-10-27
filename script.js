@@ -1,6 +1,8 @@
 const results = Array.from(window.results);
+const paramSearches = Array.from(window.paramSearches);
 const target = window.targetUrl
 let currentIndex = 0;
+console.log(paramSearches);
 
 function initialize() {
     if (results && results.length > 0) {
