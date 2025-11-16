@@ -28,6 +28,30 @@ function generateHTML() {
                         padding: 4px;
                         text-align: left;
                     }
+                        .iframe-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            justify-content: flex-start;
+        }
+        .iframe-cell {
+            width: calc(50% - 10px);
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: center;
+        }
+        iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+        }
+        @media (max-width: 600px) {
+            .iframe-cell {
+                width: 100%;
+            }
+        }
                 </style>
                 <p id="resultsCount">Number of results found: 0</p>
                 <label for="numParams">Number of parameters per request:</label>
@@ -39,8 +63,11 @@ function generateHTML() {
                 <label for="includeHash">Include hash:</label>
                 <input type="checkbox" id="includeHash">
                 <br>
+                <button onclick="loadIframes()">Iframes</button>
+                <br><br>
                 <button onclick="makeRequest()">Make request</button>
                 <p id="remainingClicks">Remaining clicks: 0</p>
+                <br>
                 <table id="resultsTable">
                     <thead>
                         <tr>
@@ -57,6 +84,8 @@ function generateHTML() {
                     <tbody>
                     </tbody>
                 </table>
+                <br>
+                <div id="iframe-grid" class="iframe-container"></div>
             `;
 }
 
@@ -94,19 +123,108 @@ function makeRequest() {
 
     if (params.length > 0) {
         let targetString = "";
-        if (target.includes("?")) {
-            targetString += `&${params.join('&')}`
+        const url = new URL(target);
+        const newQueryParams = params.join('&');
+
+        if (url.search) {
+            url.search += `&${newQueryParams}`;
         } else {
-            targetString += `?${params.join('&')}`
+            url.search += `?${newQueryParams}`;
         }
         if (includeHash) {
-            targetString += `#${targetString}`;
+            if (!url.hash) {
+                url.hash += `?${newQueryParams}`;
+            } else {
+                if (url.hash.includes('?')) {
+                    url.hash += `&${newQueryParams}`;
+                } else {
+                    url.hash += `?${newQueryParams}`;
+                }
+            }
         }
-        window.open(target + targetString);
+        window.open(url);
         currentIndex += count;
         updateRemainingClicks();
     } else {
         alert("No more results to request.");
+        currentIndex = 0;
+        updateRemainingClicks();
+    }
+}
+
+function loadIframes() {
+    const numParams = parseInt(document.getElementById('numParams').value) || 30;
+    const includeHash = document.getElementById('includeHash').checked;
+    const canary = document.getElementById('canary').value;
+
+    let allParams = [];
+    const generatedUrls = [];
+
+    for (let i = 0; i < results.length; i++) {
+        const resultElement = document.getElementById(`result${i}`);
+        if (resultElement && resultElement.checked) {
+            allParams.push(`${results[i]}=${canary}`);
+        }
+    }
+
+    if (allParams.length > 0) {
+        for (let i = 0; i < allParams.length; i += numParams) {
+            const paramBatch = allParams.slice(i, i + numParams);
+            const newQueryParams = paramBatch.join('&');
+
+            try {
+                const url = new URL(target);
+                if (url.search) {
+                    url.search += `&${newQueryParams}`;
+                } else {
+                    url.search = `?${newQueryParams}`;
+                }
+
+                if (includeHash) {
+                    if (url.hash) {
+                        if (url.hash.includes('?')) {
+                            url.hash += `&${newQueryParams}`;
+                        } else {
+                            url.hash += `?${newQueryParams}`;
+                        }
+                    } else {
+                        url.hash = `#?${newQueryParams}`;
+                    }
+                }
+                generatedUrls.push(url.toString());
+            } catch (e) {
+                console.error(`Error processing URL for batch starting at index ${i}:`, e);
+                continue;
+            }
+        }
+
+        const gridContainer = document.getElementById('iframe-grid');
+
+        generatedUrls.forEach((url, index) => {
+            const cellDiv = document.createElement('div');
+            cellDiv.className = 'iframe-cell';
+
+            const openButton = document.createElement('button');
+            openButton.textContent = 'Open in New Tab';
+
+            openButton.addEventListener('click', () => {
+                window.open(url, '_blank');
+            });
+
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+
+            iframe.onerror = () => {
+                cellDiv.innerHTML = `<p>Cannot load ${url}. The website may block embedding (X-Frame-Options).</p>`;
+                cellDiv.style.backgroundColor = '#fdd';
+            };
+
+            cellDiv.appendChild(openButton);
+            cellDiv.appendChild(iframe);
+            gridContainer.appendChild(cellDiv);
+        });
+    } else {
+        console.log("No parameters were selected to generate URLs.");
     }
 }
 
