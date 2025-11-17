@@ -213,6 +213,7 @@ function loadIframes() {
 
             const iframe = document.createElement('iframe');
             iframe.src = url;
+            iframe.sandbox = 'allow-scripts allow-forms allow-same-origin allow-popups';
 
             iframe.onerror = () => {
                 cellDiv.innerHTML = `<p>Cannot load ${url}. The website may block embedding (X-Frame-Options).</p>`;
